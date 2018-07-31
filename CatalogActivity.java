@@ -15,6 +15,7 @@
  */
 package com.example.android.pets;
 
+import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
@@ -66,13 +67,10 @@ public class CatalogActivity extends AppCompatActivity {
         // To access our database, we instantiate our subclass of SQLiteOpenHelper
         // and pass the context, which is the current activity.
 
-        // Create and/or open a database to read from it
-        SQLiteDatabase db = mDbHelper.getReadableDatabase();
-
         String[] projection = {PetEntry._ID,PetEntry.COLUMN_PET_NAME,PetEntry.COLUMN_PET_BREED,PetEntry.COLUMN_PET_GENDER,
         PetEntry.COLUMN_PET_WEIGHT};
 
-        Cursor cursor = db.query(PetEntry.TABLE_NAME,projection,null,null,null,null,null);
+        Cursor cursor = getContentResolver().query(PetEntry.CONTENT_URI,projection,null,null,null);
         TextView displayView = (TextView) findViewById(R.id.text_view_pet);
 
         try {
