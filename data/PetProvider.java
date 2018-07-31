@@ -1,155 +1,98 @@
-/*
- * Copyright (C) 2016 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-package com.example.android.pets;
+package com.example.android.pets.data;
 
-import android.content.ContentResolver;
+import android.content.ContentProvider;
+import android.content.ContentUris;
 import android.content.ContentValues;
-import android.content.Intent;
+import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
-import android.widget.TextView;
-
-import com.example.android.pets.data.PetDbHelper;
-import com.example.android.pets.data.PetContract.PetEntry;
+import android.net.Uri;
 
 /**
- * Displays list of pets that were entered and stored in the app.
+ * Created by Puspak Biswas on 26-07-2018.
  */
-public class CatalogActivity extends AppCompatActivity {
 
-    private PetDbHelper mDbHelper;
+public class PetProvider extends ContentProvider {
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_catalog);
-        Log.i("CatalogActivity", "onCreate: Has been called ");
+    private PetDbHelper mPetDbHelper;
 
-        // Setup FAB to open EditorActivity
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(CatalogActivity.this, EditorActivity.class);
-                startActivity(intent);
-            }
-        });
-        mDbHelper = new PetDbHelper(this);
-        displayDatabaseInfo();
+    /** URI matcher code for the content URI for the pets table */
+    private static final int PETS = 100;
+    /** URI matcher code for the content URI for a single pet in the pets table */
+    private static final int PETS_ID = 101;
+    /**
+     * UriMatcher object to match a content URI to a corresponding code.
+     * The input passed into the constructor represents the code to return for the root URI.
+     * It's common to use NO_MATCH as the input for this case.
+     */
+    private static final UriMatcher sUriMather = new UriMatcher(UriMatcher.NO_MATCH);
+    // Static initializer. This is run the first time anything is called from this class.
+    static{
+        sUriMather.addURI(PetContract.CONTENT_AUTHORITY,PetContract.PATH_PETS,PETS);
+        sUriMather.addURI(PetContract.CONTENT_AUTHORITY,PetContract.PATH_PETS+"/#",PETS_ID);
     }
+    public static final String LOG_TAG = PetContract.PetEntry.class.getSimpleName();
 
-    protected void onStart(){
-        super.onStart();
-        displayDatabaseInfo();
-    }
 
-    private void displayDatabaseInfo() {
-        // To access our database, we instantiate our subclass of SQLiteOpenHelper
-        // and pass the context, which is the current activity.
-
-        String[] projection = {PetEntry._ID,PetEntry.COLUMN_PET_NAME,PetEntry.COLUMN_PET_BREED,PetEntry.COLUMN_PET_GENDER,
-        PetEntry.COLUMN_PET_WEIGHT};
-
-        Cursor cursor = getContentResolver().query(PetEntry.CONTENT_URI,projection,null,null,null);
-        TextView displayView = (TextView) findViewById(R.id.text_view_pet);
-
-        try {
-            // Create a header in the Text View that looks like this:
-            //
-            // The pets table contains <number of rows in Cursor> pets.
-            // _id - name - breed - gender - weight
-            //
-            // In the while loop below, iterate through the rows of the cursor and display
-            // the information from each column in this order.
-            displayView.setText("The pets table contains " + cursor.getCount() + " pets.\n\n");
-            displayView.append(PetEntry._ID + " - " +
-                    PetEntry.COLUMN_PET_NAME + "-" + PetEntry.COLUMN_PET_BREED + "-" +
-                    PetEntry.COLUMN_PET_GENDER + "-" + PetEntry.COLUMN_PET_WEIGHT + "\n");
-
-            // Figure out the index of each column
-            int idColumnIndex = cursor.getColumnIndex(PetEntry._ID);
-            int nameColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_NAME);
-            int breedColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_BREED);
-            int genderColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_GENDER);
-            int weightColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_WEIGHT);
-
-            // Iterate through all the returned rows in the cursor
-            while (cursor.moveToNext()) {
-                // Use that index to extract the String or Int value of the word
-                // at the current row the cursor is on.
-                int currentID = cursor.getInt(idColumnIndex);
-                String currentName = cursor.getString(nameColumnIndex);
-                String currentBreed = cursor.getString(breedColumnIndex);
-                int currentGender = cursor.getInt(genderColumnIndex);
-                int currentWeight = cursor.getInt(weightColumnIndex);
-                // Display the values from each column of the current row in the cursor in the TextView
-                displayView.append(("\n" + currentID + " - " +
-                        currentName + "-" + currentBreed + "-" + currentGender + "-" + currentWeight));
-            }
-        } finally {
-            // Always close the cursor when you're done reading from it. This releases all its
-            // resources and makes it invalid.
-            cursor.close();
-        }
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu options from the res/menu/menu_catalog.xml file.
-        // This adds menu items to the app bar.
-        getMenuInflater().inflate(R.menu.menu_catalog, menu);
+    public boolean onCreate(){
+        mPetDbHelper = new PetDbHelper(getContext());
         return true;
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // User clicked on a menu option in the app bar overflow menu
-        switch (item.getItemId()) {
-            // Respond to a click on the "Insert dummy data" menu option
-            case R.id.action_insert_dummy_data:
-                insertRow();
-                return true;
-            // Respond to a click on the "Delete all entries" menu option
-            case R.id.action_delete_all_entries:
-                // Do nothing for now
-                return true;
+    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs,
+                        String sortOrder){
+        // Get readable database
+        SQLiteDatabase database = mPetDbHelper.getReadableDatabase();
+
+        // This cursor will hold the result of the query
+        Cursor cursor;
+
+        // Figure out if the URI matcher can match the URI to a specific code
+        int match = sUriMather.match(uri);
+
+        switch(match){
+            case PETS:
+                // For the PETS code, query the pets table directly with the given
+                // projection, selection, selection arguments, and sort order. The cursor
+                // could contain multiple rows of the pets table.
+                cursor = database.query(PetContract.PetEntry.TABLE_NAME,projection,selection,selectionArgs,
+                        null,null,sortOrder);
+                break;
+            case PETS_ID:
+                // For the PET_ID code, extract out the ID from the URI.
+                // For an example URI such as "content://com.example.android.pets/pets/3",
+                // the selection will be "_id=?" and the selection argument will be a
+                // String array containing the actual ID of 3 in this case.
+                //
+                // For every "?" in the selection, we need to have an element in the selection
+                // arguments that will fill in the "?". Since we have 1 question mark in the
+                // selection, we have 1 String in the selection arguments' String array.
+                selection = PetContract.PetEntry._ID+"=?";
+                selectionArgs = new String[]{String.valueOf(ContentUris.parseId(uri))};
+                // This will perform a query on the pets table where the _id equals 3 to return a
+                // Cursor containing that row of the table.
+                cursor = database.query(PetContract.PetEntry.TABLE_NAME,projection,selection,selectionArgs,
+                        null,null,sortOrder);
+                break;
+            default:
+                throw new IllegalArgumentException("Cannot query unknown URI " + uri);
         }
-        return super.onOptionsItemSelected(item);
+        return cursor;
     }
 
-    public void insertRow(){
-        ContentValues values = new ContentValues();
-        values.put(PetEntry.COLUMN_PET_NAME,"Toto");
-        values.put(PetEntry.COLUMN_PET_BREED,"Terrier");
-        values.put(PetEntry.COLUMN_PET_GENDER,1);
-        values.put(PetEntry.COLUMN_PET_WEIGHT,14);
+    public Uri insert(Uri uri, ContentValues contentValues){
+        return null;
+    }
 
-        SQLiteDatabase db = mDbHelper.getWritableDatabase();
-        long returnOfInsert = db.insert(PetEntry.TABLE_NAME,null,values);
+    public int update(Uri uri, ContentValues contentValues, String selection, String[] selectionArgs){
+        return 0;
+    }
 
-        if(returnOfInsert == -1){
-            Log.e("InsertResult","not correct");
-        }
-        displayDatabaseInfo();
+    public int delete(Uri uri, String selection, String[] selectionArgs){
+        return 0;
+    }
+
+    public String getType(Uri uri){
+        return null;
     }
 }
