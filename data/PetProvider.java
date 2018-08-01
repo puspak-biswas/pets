@@ -7,6 +7,7 @@ import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
+import android.util.Log;
 
 /**
  * Created by Puspak Biswas on 26-07-2018.
@@ -81,7 +82,32 @@ public class PetProvider extends ContentProvider {
     }
 
     public Uri insert(Uri uri, ContentValues contentValues){
-        return null;
+        final int match = sUriMather.match(uri);
+        switch(match){
+            case PETS:
+                return (insertPet(uri,contentValues));
+            default:
+                throw new IllegalArgumentException("Cannot insert unknown URI " + uri);
+        }
+    }
+
+    /**
+     * Insert a pet into the database with the given content values. Return the new content URI
+     * for that specific row in the database.
+     */
+    private Uri insertPet(Uri uri, ContentValues values){
+        // Get writeable database
+        SQLiteDatabase database = mPetDbHelper.getWritableDatabase();
+        // Insert the new pet with the given values
+        long returnId = database.insert(PetContract.PetEntry.TABLE_NAME,null,values);
+
+        if(returnId == -1){
+            Log.e(LOG_TAG,"invalid insert in table"+uri);
+            return null;
+        }
+        // Once we know the ID of the new row in the table,
+        // return the new URI with the ID appended to the end of it
+        return ContentUris.withAppendedId(uri,returnId);
     }
 
     public int update(Uri uri, ContentValues contentValues, String selection, String[] selectionArgs){
