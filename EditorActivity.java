@@ -18,6 +18,7 @@ package com.example.android.pets;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
@@ -119,23 +120,27 @@ public class EditorActivity extends AppCompatActivity {
     }
 
     public void insertRow(){
+        // Read from input fields
+        // Use trim to eliminate leading or trailing white space
+        // Create a ContentValues object where column names are the keys,
+        // and pet attributes from the editor are the values.
         ContentValues values = new ContentValues();
         values.put(PetEntry.COLUMN_PET_NAME,mNameEditText.getText().toString().trim());
         values.put(PetEntry.COLUMN_PET_BREED,mBreedEditText.getText().toString().trim());
         values.put(PetEntry.COLUMN_PET_GENDER,mGender);
         values.put(PetEntry.COLUMN_PET_WEIGHT,Integer.parseInt(mWeightEditText.getText().toString().trim()));
 
-        PetDbHelper petHelper = new PetDbHelper(this);
+        // Insert a new pet into the provider, returning the content URI for the new pet.
+        Uri newUri = getContentResolver().insert(PetEntry.CONTENT_URI,values);
 
-        SQLiteDatabase db = petHelper.getWritableDatabase();
-
-        long insertReturn = db.insert(PetEntry.TABLE_NAME,null,values);
-
-        if(insertReturn == -1){
-            Toast.makeText(this,"Error while inserting pet",Toast.LENGTH_SHORT).show();
+        // Show a toast message depending on whether or not the insertion was successful
+        if(newUri == null){
+            // If the new content URI is null, then there was an error with insertion.
+            Toast.makeText(this,R.string.insert_failed,Toast.LENGTH_SHORT).show();
         }
         else{
-            Toast.makeText(this,"Row inserted with id:"+insertReturn,Toast.LENGTH_SHORT).show();
+            // Otherwise, the insertion was successful and we can display a toast.
+            Toast.makeText(this,R.string.insert_success,Toast.LENGTH_SHORT).show();
         }
     }
 
