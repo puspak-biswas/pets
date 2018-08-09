@@ -1,3 +1,4 @@
 # pets
 android database
-add checks before inserting data to db
+Sanity check - add checks before inserting data to db
+ContentProvider-update : write the update query method of content provider
