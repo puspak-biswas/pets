@@ -130,7 +130,64 @@ public class PetProvider extends ContentProvider {
     }
 
     public int update(Uri uri, ContentValues contentValues, String selection, String[] selectionArgs){
-        return 0;
+        int match = sUriMather.match(uri);
+        switch(match){
+            case PETS:
+                return updatePet(uri,contentValues,selection,selectionArgs);
+            case PETS_ID:
+                // For the PET_ID code, extract out the ID from the URI,
+                // so we know which row to update. Selection will be "_id=?" and selection
+                // arguments will be a String array containing the actual ID.
+                long id = ContentUris.parseId(uri);
+                selection = PetContract.PetEntry._ID+"=?";
+                selectionArgs = new String[]{String.valueOf(id)};
+                return updatePet(uri,contentValues,selection,selectionArgs);
+            default:
+                throw new IllegalArgumentException("The update URI is invalid");
+        }
+    }
+    /**
+     * Update pets in the database with the given content values. Apply the changes to the rows
+     * specified in the selection and selection arguments (which could be 0 or 1 or more pets).
+     * Return the number of rows that were successfully updated.
+     */
+    private int updatePet(Uri uri, ContentValues values, String selection, String[] selectionArgs){
+        // If the {@link PetEntry#COLUMN_PET_NAME} key is present,
+        // check that the name value is not null.
+        if (values.containsKey(PetContract.PetEntry.COLUMN_PET_NAME)){
+            String name = values.getAsString(PetContract.PetEntry.COLUMN_PET_NAME);
+            if(name == null){
+                throw new IllegalArgumentException("Pet name required");
+            }
+        }
+        // If the {@link PetEntry#COLUMN_PET_GENDER} key is present,
+        // check that the gender value is valid.
+        if(values.containsKey(PetContract.PetEntry.COLUMN_PET_GENDER)){
+            Integer gender = values.getAsInteger(PetContract.PetEntry.COLUMN_PET_GENDER);
+            if(gender == null || !PetContract.PetEntry.isValidGender(gender)){
+                throw new IllegalArgumentException("Pet gender not valid");
+            }
+        }
+        // If the {@link PetEntry#COLUMN_PET_WEIGHT} key is present,
+        // check that the weight value is valid.
+        if(values.containsKey(PetContract.PetEntry.COLUMN_PET_WEIGHT)){
+            Integer weight = values.getAsInteger(PetContract.PetEntry.COLUMN_PET_WEIGHT);
+            if(weight != null && weight < 0){
+                throw new IllegalArgumentException("Pet weight not valid");
+            }
+        }
+        // No need to check the breed, any value is valid (including null).
+
+        // If there are no values to update, then don't try to update the database
+        if(values.size() == 0){
+            return 0;
+        }
+        // Otherwise, get writable database to update the data
+        SQLiteDatabase database = mPetDbHelper.getWritableDatabase();
+
+        // Returns the number of database rows affected by the update statement
+        int rows = database.update(PetContract.PetEntry.TABLE_NAME,values,selection,selectionArgs);
+        return rows;
     }
 
     public int delete(Uri uri, String selection, String[] selectionArgs){
