@@ -191,10 +191,33 @@ public class PetProvider extends ContentProvider {
     }
 
     public int delete(Uri uri, String selection, String[] selectionArgs){
-        return 0;
+        // Get writeable database
+        SQLiteDatabase database = mPetDbHelper.getWritableDatabase();
+        int match = sUriMather.match(uri);
+        switch(match){
+            case PETS:
+                // Delete all rows that match the selection and selection args
+                return database.delete(PetContract.PetEntry.TABLE_NAME,selection,selectionArgs);
+            case PETS_ID:
+                // Delete a single row given by the ID in the URI
+                long id = ContentUris.parseId(uri);
+                selection = PetContract.PetEntry._ID+"=?";
+                selectionArgs = new String[] {String.valueOf(id)};
+                return database.delete(PetContract.PetEntry.TABLE_NAME,selection,selectionArgs);
+            default:
+                throw new IllegalArgumentException("Cant do delete due to invalid URI");
+        }
     }
 
     public String getType(Uri uri){
-        return null;
+        int match = sUriMather.match(uri);
+        switch(match){
+            case PETS:
+                return PetContract.PetEntry.CONTENT_LIST_TYPE;
+            case PETS_ID:
+                return PetContract.PetEntry.CONTENT_ITEM_TYPE;
+            default:
+                throw new IllegalArgumentException("Unknown URI "+uri+" with match "+match);
+        }
     }
 }
