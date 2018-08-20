@@ -1,166 +1,74 @@
-/*
- * Copyright (C) 2016 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.example.android.pets;
 
-import android.content.ContentResolver;
-import android.content.ContentValues;
-import android.content.Intent;
+import android.content.Context;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.net.Uri;
-import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.support.v4.widget.CursorAdapter;
+import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.ListView;
+import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.example.android.pets.data.PetDbHelper;
-import com.example.android.pets.data.PetContract.PetEntry;
+import com.example.android.pets.data.PetContract;
 
 /**
- * Displays list of pets that were entered and stored in the app.
+ * Created by Puspak Biswas on 19-08-2018.
  */
-public class CatalogActivity extends AppCompatActivity {
 
-    private PetDbHelper mDbHelper;
+/**
+ * {@link PetCursorAdapter} is an adapter for a list or grid view
+ * that uses a {@link Cursor} of pet data as its data source. This adapter knows
+ * how to create list items for each row of pet data in the {@link Cursor}.
+ */
 
+public class PetCursorAdapter extends CursorAdapter {
+    /**
+     * Constructs a new {@link PetCursorAdapter}.
+     *
+     * @param context The context
+     * @param c       The cursor from which to get the data.
+     */
+    public PetCursorAdapter(Context context, Cursor c) {
+        super(context, c, 0);
+    }
+
+    /**
+     * Makes a new blank list item view. No data is set (or bound) to the views yet.
+     *
+     * @param context app context
+     *                cursor  The cursor from which to get the data. The cursor is already
+     *                moved to the correct position.
+     * @param parent  The parent to which the new view is attached to
+     * @return the newly created list item view.
+     */
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_catalog);
-        Log.i("CatalogActivity", "onCreate: Has been called ");
-
-        // Setup FAB to open EditorActivity
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(CatalogActivity.this, EditorActivity.class);
-                startActivity(intent);
-            }
-        });
-        mDbHelper = new PetDbHelper(this);
-        displayDatabaseInfo();
+    public View newView(Context context, Cursor c, ViewGroup parent) {
+        // Inflate a list item view using the layout specified in list_item.xml
+        return LayoutInflater.from(context).inflate(R.layout.list_item, parent,false);
     }
 
-    protected void onStart(){
-        super.onStart();
-        displayDatabaseInfo();
-    }
-
-    private void displayDatabaseInfo() {
-        // To access our database, we instantiate our subclass of SQLiteOpenHelper
-        // and pass the context, which is the current activity.
-
-        String[] projection = {PetEntry._ID,PetEntry.COLUMN_PET_NAME,PetEntry.COLUMN_PET_BREED,PetEntry.COLUMN_PET_GENDER,
-        PetEntry.COLUMN_PET_WEIGHT};
-
-        Cursor cursor = getContentResolver().query(PetEntry.CONTENT_URI,projection,null,null,null);
-        //TextView displayView = (TextView) findViewById(R.id.text_view_pet);
-
-        ListView list = (ListView) findViewById(R.id.list);
-        PetCursorAdapter adapter = new PetCursorAdapter(this,cursor);
-        list.setAdapter(adapter);
-
-       // cursor.close();
-
-        //try {
-            // Create a header in the Text View that looks like this:
-            //
-            // The pets table contains <number of rows in Cursor> pets.
-            // _id - name - breed - gender - weight
-            //
-            // In the while loop below, iterate through the rows of the cursor and display
-            // the information from each column in this order.
-        //    displayView.setText("The pets table contains " + cursor.getCount() + " pets.\n\n");
-        //    displayView.append(PetEntry._ID + " - " +
-        //            PetEntry.COLUMN_PET_NAME + "-" + PetEntry.COLUMN_PET_BREED + "-" +
-        //            PetEntry.COLUMN_PET_GENDER + "-" + PetEntry.COLUMN_PET_WEIGHT + "\n");
-
-            // Figure out the index of each column
-         //   int idColumnIndex = cursor.getColumnIndex(PetEntry._ID);
-         //   int nameColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_NAME);
-         //   int breedColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_BREED);
-         //   int genderColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_GENDER);
-         //   int weightColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_WEIGHT);
-
-            // Iterate through all the returned rows in the cursor
-         //   while (cursor.moveToNext()) {
-                // Use that index to extract the String or Int value of the word
-                // at the current row the cursor is on.
-         //       int currentID = cursor.getInt(idColumnIndex);
-         //       String currentName = cursor.getString(nameColumnIndex);
-         //       String currentBreed = cursor.getString(breedColumnIndex);
-         //       int currentGender = cursor.getInt(genderColumnIndex);
-         //       int currentWeight = cursor.getInt(weightColumnIndex);
-                // Display the values from each column of the current row in the cursor in the TextView
-         //       displayView.append(("\n" + currentID + " - " +
-         //               currentName + "-" + currentBreed + "-" + currentGender + "-" + currentWeight));
-          //  }
-        //} finally {
-            // Always close the cursor when you're done reading from it. This releases all its
-            // resources and makes it invalid.
-         //   cursor.close();
-        //}
-    }
-
+    /**
+     * This method binds the pet data (in the current row pointed to by cursor) to the given
+     * list item layout. For example, the name for the current pet can be set on the name TextView
+     * in the list item layout.
+     *
+     * @param view    Existing view, returned earlier by newView() method
+     * @param context app context
+     * @param cursor  The cursor from which to get the data. The cursor is already moved to the
+     *                correct row.
+     */
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu options from the res/menu/menu_catalog.xml file.
-        // This adds menu items to the app bar.
-        getMenuInflater().inflate(R.menu.menu_catalog, menu);
-        return true;
-    }
+    public void bindView(View view, Context context, Cursor cursor) {
+        // Find individual views that we want to modify in the list item layout
+        TextView name = (TextView) view.findViewById(R.id.name);
+        TextView summary = (TextView) view.findViewById(R.id.summary);
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // User clicked on a menu option in the app bar overflow menu
-        switch (item.getItemId()) {
-            // Respond to a click on the "Insert dummy data" menu option
-            case R.id.action_insert_dummy_data:
-                insertRow();
-                return true;
-            // Respond to a click on the "Delete all entries" menu option
-            case R.id.action_delete_all_entries:
-                // Do nothing for now
-                return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
+        // Find the columns of pet attributes that we're interested in
+        int nameColumnIndex = cursor.getColumnIndex(PetContract.PetEntry.COLUMN_PET_NAME);
+        int summaryColumnIndex = cursor.getColumnIndex(PetContract.PetEntry.COLUMN_PET_BREED);
 
-    public void insertRow(){
-        // Create a ContentValues object where column names are the keys,
-        // and Toto's pet attributes are the values.
-        ContentValues values = new ContentValues();
-        values.put(PetEntry.COLUMN_PET_NAME,"Toto");
-        values.put(PetEntry.COLUMN_PET_BREED,"Terrier");
-        values.put(PetEntry.COLUMN_PET_GENDER,1);
-        values.put(PetEntry.COLUMN_PET_WEIGHT,14);
-        // Insert a new row for Toto into the provider using the ContentResolver.
-        // Use the {@link PetEntry#CONTENT_URI} to indicate that we want to insert
-        // into the pets database table.
-        // Receive the new content URI that will allow us to access Toto's data in the future.
-        Uri newUri = getContentResolver().insert(PetEntry.CONTENT_URI,values);
-        if(newUri == null){
-            Log.e("InsertResult","not correct");
-        }
-        displayDatabaseInfo();
+        // Read the pet attributes from the Cursor for the current pet
+        // Update the TextViews with the attributes for the current pet
+        name.setText(cursor.getString(nameColumnIndex));
+        summary.setText(cursor.getString(summaryColumnIndex));
     }
 }
