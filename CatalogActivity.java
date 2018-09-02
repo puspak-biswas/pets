@@ -23,6 +23,9 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.app.LoaderManager;
+import android.content.CursorLoader;
+import android.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -30,6 +33,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.support.v4.widget.SimpleCursorAdapter;
+import android.support.v4.widget.CursorAdapter;
 
 import com.example.android.pets.data.PetDbHelper;
 import com.example.android.pets.data.PetContract.PetEntry;
@@ -37,9 +42,13 @@ import com.example.android.pets.data.PetContract.PetEntry;
 /**
  * Displays list of pets that were entered and stored in the app.
  */
-public class CatalogActivity extends AppCompatActivity {
+public class CatalogActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor>{
 
     private PetDbHelper mDbHelper;
+
+    private static final int PET_LOADER = 0;
+
+    private PetCursorAdapter mCursorAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,28 +65,38 @@ public class CatalogActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+        // Find the ListView which will be populated with the pet data
+        ListView petListView = (ListView) findViewById(R.id.list);
+        // Find and set empty view on the ListView, so that it only shows when the list has 0 items.
+        View emptyView = findViewById(R.id.empty_view);
+        petListView.setEmptyView(emptyView);
+
+        mCursorAdapter = new PetCursorAdapter(this,null);
+        petListView.setAdapter(mCursorAdapter);
         mDbHelper = new PetDbHelper(this);
-        displayDatabaseInfo();
+
+        getLoaderManager().initLoader(PET_LOADER,null,this);
+        //displayDatabaseInfo();
     }
 
     protected void onStart(){
         super.onStart();
-        displayDatabaseInfo();
+        //displayDatabaseInfo();
     }
 
-    private void displayDatabaseInfo() {
+   // private void displayDatabaseInfo() {
         // To access our database, we instantiate our subclass of SQLiteOpenHelper
         // and pass the context, which is the current activity.
 
-        String[] projection = {PetEntry._ID,PetEntry.COLUMN_PET_NAME,PetEntry.COLUMN_PET_BREED,PetEntry.COLUMN_PET_GENDER,
-        PetEntry.COLUMN_PET_WEIGHT};
+    //    String[] projection = {PetEntry._ID,PetEntry.COLUMN_PET_NAME,PetEntry.COLUMN_PET_BREED,PetEntry.COLUMN_PET_GENDER,
+    //    PetEntry.COLUMN_PET_WEIGHT};
 
-        Cursor cursor = getContentResolver().query(PetEntry.CONTENT_URI,projection,null,null,null);
+     //   Cursor cursor = getContentResolver().query(PetEntry.CONTENT_URI,projection,null,null,null);
         //TextView displayView = (TextView) findViewById(R.id.text_view_pet);
 
-        ListView list = (ListView) findViewById(R.id.list);
-        PetCursorAdapter adapter = new PetCursorAdapter(this,cursor);
-        list.setAdapter(adapter);
+      //  ListView list = (ListView) findViewById(R.id.list);
+       // PetCursorAdapter adapter = new PetCursorAdapter(this,cursor);
+       // list.setAdapter(adapter);
 
        // cursor.close();
 
@@ -119,7 +138,7 @@ public class CatalogActivity extends AppCompatActivity {
             // resources and makes it invalid.
          //   cursor.close();
         //}
-    }
+    //}
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -161,6 +180,19 @@ public class CatalogActivity extends AppCompatActivity {
         if(newUri == null){
             Log.e("InsertResult","not correct");
         }
-        displayDatabaseInfo();
+        //displayDatabaseInfo();
+    }
+
+    public Loader<Cursor> onCreateLoader(int id, Bundle bundle){
+        String[] projection = {PetEntry._ID,PetEntry.COLUMN_PET_NAME,PetEntry.COLUMN_PET_BREED};
+        return new CursorLoader(this,PetEntry.CONTENT_URI,projection,null,null,null);
+    }
+
+    public void onLoadFinished(Loader<Cursor> loader, Cursor cursor){
+        mCursorAdapter.swapCursor(cursor);
+    }
+
+    public void onLoaderReset(Loader<Cursor> loader){
+        mCursorAdapter.swapCursor(null);
     }
 }
